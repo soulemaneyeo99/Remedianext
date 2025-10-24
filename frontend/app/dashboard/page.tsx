@@ -16,19 +16,40 @@ import {
   Activity
 } from 'lucide-react'
 
+// Types stricts pour éviter les erreurs TypeScript
+type ColorType = 'blue' | 'green' | 'emerald' | 'yellow'
+type ImpactColorType = 'green' | 'blue' | 'purple'
+
+interface MetricCardProps {
+  icon: React.ElementType
+  title: string
+  value: string
+  change: number
+  isPositive: boolean
+  color: ColorType
+}
+
+interface ImpactCardProps {
+  icon: React.ElementType
+  title: string
+  value: string
+  description: string
+  color: ImpactColorType
+}
+
 export default function DashboardPage() {
-  const [metrics, setMetrics] = useState({
+  const [metrics] = useState({
     totalScans: 3456,
     activeUsers: 1289,
     plantsIdentified: 127,
     communities: 7,
-    moneySaved: 3250000, // FCFA
-    co2Reduced: 847, // kg
+    moneySaved: 3250000,
+    co2Reduced: 847,
     tradipractioners: 89,
     satisfactionRate: 96
   })
 
-  const [growth, setGrowth] = useState({
+  const [growth] = useState({
     scans: 23.5,
     users: 15.2,
     plants: 8.7,
@@ -139,7 +160,6 @@ export default function DashboardPage() {
 
         {/* Charts Section */}
         <div className="grid lg:grid-cols-2 gap-8 mb-8">
-          {/* Usage Trends */}
           <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
             <h3 className="text-xl font-bold text-gray-900 mb-6">
               Tendances d'Utilisation (7 derniers jours)
@@ -147,7 +167,6 @@ export default function DashboardPage() {
             <UsageChart />
           </div>
 
-          {/* Top Plants */}
           <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
             <h3 className="text-xl font-bold text-gray-900 mb-6">
               Plantes Les Plus Recherchées
@@ -193,8 +212,8 @@ export default function DashboardPage() {
 }
 
 // Components
-function MetricCard({ icon: Icon, title, value, change, isPositive, color }: any) {
-  const colorClasses = {
+function MetricCard({ icon: Icon, title, value, change, isPositive, color }: MetricCardProps) {
+  const colorClasses: Record<ColorType, string> = {
     blue: 'from-blue-500 to-cyan-600',
     green: 'from-green-500 to-emerald-600',
     emerald: 'from-emerald-500 to-teal-600',
@@ -204,7 +223,7 @@ function MetricCard({ icon: Icon, title, value, change, isPositive, color }: any
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow">
       <div className="flex items-start justify-between mb-4">
-        <div className={`w-12 h-12 bg-gradient-to-br ${colorClasses[color as keyof typeof colorClasses]} rounded-lg flex items-center justify-center`}>
+        <div className={`w-12 h-12 bg-gradient-to-br ${colorClasses[color]} rounded-lg flex items-center justify-center`}>
           <Icon className="h-6 w-6 text-white" />
         </div>
         
@@ -225,8 +244,8 @@ function MetricCard({ icon: Icon, title, value, change, isPositive, color }: any
   )
 }
 
-function ImpactCard({ icon: Icon, title, value, description, color }: any) {
-  const colorClasses = {
+function ImpactCard({ icon: Icon, title, value, description, color }: ImpactCardProps) {
+  const colorClasses: Record<ImpactColorType, string> = {
     green: 'text-green-600 bg-green-100',
     blue: 'text-blue-600 bg-blue-100',
     purple: 'text-purple-600 bg-purple-100'
@@ -363,7 +382,7 @@ function GeographicStats() {
   )
 }
 
-function TestimonialCard({ quote, author, location }: any) {
+function TestimonialCard({ quote, author, location }: { quote: string; author: string; location: string }) {
   return (
     <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
       <div className="text-4xl text-green-300 mb-3">"</div>
