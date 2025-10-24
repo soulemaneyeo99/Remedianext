@@ -392,11 +392,12 @@ function StatCard({ icon: Icon, value, label, suffix = '' }: any) {
 }
 
 function FeatureCard({ icon: Icon, title, description, link, color }: any) {
-  const colorClasses = {
-    green: 'from-green-500 to-emerald-600',
-    blue: 'from-blue-500 to-cyan-600',
-    emerald: 'from-emerald-500 to-teal-600'
-  }
+  const colorClasses: Record<string, string> = {
+  green: 'from-green-400 to-green-600',
+  blue: 'from-blue-400 to-blue-600',
+  emerald: 'from-emerald-400 to-emerald-600',
+    };
+
 
   return (
     <Link href={link} className="group">
