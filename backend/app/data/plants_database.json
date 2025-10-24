@@ -1,0 +1,330 @@
+{
+  "plants": [
+    {
+      "id": "1",
+      "scientific_name": "Azadirachta indica",
+      "common_names": ["Neem", "Margousier", "Nim"],
+      "local_names": {
+        "bambara": "Nim",
+        "dioula": "Kinkeliba"
+      },
+      "family": "Meliaceae",
+      "description": "Arbre tropical aux multiples vertus médicinales, originaire d'Inde mais largement cultivé en Afrique de l'Ouest.",
+      "traditional_uses": [
+        "Traitement du paludisme",
+        "Antiseptique pour plaies",
+        "Vermifuge",
+        "Traitement des infections cutanées"
+      ],
+      "medicinal_properties": [
+        "Antibactérien",
+        "Antifongique",
+        "Antiparasitaire",
+        "Anti-inflammatoire"
+      ],
+      "preparation": "Décoction de feuilles (20g pour 1L d'eau, bouillir 10 min)",
+      "dosage": "3 tasses par jour pendant 5-7 jours",
+      "warnings": [
+        "Déconseillé pendant la grossesse",
+        "Peut interagir avec certains médicaments",
+        "Ne pas utiliser chez les enfants de moins de 2 ans"
+      ],
+      "found_in": ["Côte d'Ivoire", "Mali", "Sénégal", "Bénin", "Togo", "Guinée"],
+      "scientific_validation": "Études cliniques sur l'activité antipaludique (OMS)",
+      "image_url": "/images/plants/neem.jpg"
+    },
+    {
+      "id": "2",
+      "scientific_name": "Moringa oleifera",
+      "common_names": ["Moringa", "Arbre de vie", "Néverdié"],
+      "local_names": {
+        "wolof": "Nébéday",
+        "bambara": "Arzantiaga"
+      },
+      "family": "Moringaceae",
+      "description": "Arbre miracle aux feuilles riches en nutriments, utilisé pour combattre la malnutrition.",
+      "traditional_uses": [
+        "Traitement de la malnutrition",
+        "Augmentation de la lactation",
+        "Traitement du diabète",
+        "Renforcement du système immunitaire"
+      ],
+      "medicinal_properties": [
+        "Nutritif (vitamines A, C, fer, calcium)",
+        "Antioxydant",
+        "Anti-inflammatoire",
+        "Hypoglycémiant"
+      ],
+      "preparation": "Poudre de feuilles séchées (1 cuillère à soupe dans l'eau ou la nourriture)",
+      "dosage": "2-3 fois par jour avec les repas",
+      "warnings": [
+        "Prudence pendant la grossesse (consulter un médecin)",
+        "Peut interagir avec les médicaments contre le diabète"
+      ],
+      "found_in": ["Côte d'Ivoire", "Mali", "Sénégal", "Burkina Faso", "Niger"],
+      "scientific_validation": "Nombreuses études nutritionnelles et cliniques (FAO, OMS)",
+      "image_url": "/images/plants/moringa.jpg"
+    },
+    {
+      "id": "3",
+      "scientific_name": "Combretum micranthum",
+      "common_names": ["Kinkeliba", "Thé de longue vie"],
+      "local_names": {
+        "wolof": "Séex",
+        "bambara": "Ngalama"
+      },
+      "family": "Combretaceae",
+      "description": "Plante emblématique d'Afrique de l'Ouest, consommée en infusion quotidienne.",
+      "traditional_uses": [
+        "Traitement des problèmes digestifs",
+        "Fébrifuge (contre la fièvre)",
+        "Traitement du paludisme",
+        "Détoxification du foie"
+      ],
+      "medicinal_properties": [
+        "Antioxydant",
+        "Diurétique",
+        "Antimicrobien",
+        "Hépatoprotecteur"
+      ],
+      "preparation": "Infusion de feuilles séchées (1 poignée pour 1L d'eau bouillante)",
+      "dosage": "2-3 tasses par jour, peut être consommé quotidiennement",
+      "warnings": [
+        "Aucune contre-indication majeure connue",
+        "Consommation excessive peut causer des troubles digestifs"
+      ],
+      "found_in": ["Sénégal", "Mali", "Burkina Faso", "Mauritanie", "Guinée"],
+      "scientific_validation": "Études sur les propriétés antioxydantes et antimicrobiennes",
+      "image_url": "/images/plants/kinkeliba.jpg"
+    },
+    {
+      "id": "4",
+      "scientific_name": "Vernonia amygdalina",
+      "common_names": ["Vernonie", "Feuille amère"],
+      "local_names": {
+        "yoruba": "Ewuro",
+        "igbo": "Onugbu"
+      },
+      "family": "Asteraceae",
+      "description": "Plante aux feuilles très amères, largement utilisée en médecine traditionnelle.",
+      "traditional_uses": [
+        "Traitement du paludisme",
+        "Diabète",
+        "Infections intestinales",
+        "Stimulation de l'appétit"
+      ],
+      "medicinal_properties": [
+        "Antipaludique",
+        "Hypoglycémiant",
+        "Antimicrobien",
+        "Vermifuge"
+      ],
+      "preparation": "Décoction de feuilles fraîches (10-15 feuilles dans 1L d'eau)",
+      "dosage": "1 petit verre 2 fois par jour pendant 3-5 jours",
+      "warnings": [
+        "Goût très amer",
+        "Déconseillé pendant la grossesse",
+        "Peut causer des diarrhées si consommé en excès"
+      ],
+      "found_in": ["Côte d'Ivoire", "Nigeria", "Cameroun", "Bénin", "Togo"],
+      "scientific_validation": "Études cliniques sur l'activité antipaludique et antidiabétique",
+      "image_url": "/images/plants/vernonia.jpg"
+    },
+    {
+      "id": "5",
+      "scientific_name": "Carica papaya",
+      "common_names": ["Papayer", "Papaye"],
+      "local_names": {
+        "bambara": "Papaya",
+        "wolof": "Papay"
+      },
+      "family": "Caricaceae",
+      "description": "Arbre fruitier dont les feuilles sont utilisées pour traiter le paludisme.",
+      "traditional_uses": [
+        "Traitement du paludisme",
+        "Troubles digestifs",
+        "Vermifuge",
+        "Cicatrisation des plaies"
+      ],
+      "medicinal_properties": [
+        "Antipaludique",
+        "Digestif (enzyme papaïne)",
+        "Antiparasitaire",
+        "Cicatrisant"
+      ],
+      "preparation": "Décoction de feuilles fraîches (5-7 feuilles dans 1L d'eau)",
+      "dosage": "1 verre 3 fois par jour pendant 5 jours",
+      "warnings": [
+        "Goût très amer",
+        "Déconseillé pendant la grossesse",
+        "Ne pas utiliser chez les enfants de moins de 5 ans sans avis médical"
+      ],
+      "found_in": ["Toute l'Afrique tropicale"],
+      "scientific_validation": "Études sur l'augmentation des plaquettes dans le paludisme",
+      "image_url": "/images/plants/papaya.jpg"
+    },
+    {
+      "id": "6",
+      "scientific_name": "Cymbopogon citratus",
+      "common_names": ["Citronnelle", "Herbe citron"],
+      "local_names": {
+        "bambara": "Tassa",
+        "wolof": "Tann"
+      },
+      "family": "Poaceae",
+      "description": "Plante aromatique au parfum de citron, utilisée en infusion et en cuisine.",
+      "traditional_uses": [
+        "Fièvre et grippe",
+        "Troubles digestifs",
+        "Hypertension",
+        "Insomnie"
+      ],
+      "medicinal_properties": [
+        "Fébrifuge",
+        "Digestif",
+        "Calmant",
+        "Antimicrobien"
+      ],
+      "preparation": "Infusion de tiges fraîches ou séchées (2-3 tiges pour 1L d'eau)",
+      "dosage": "2-3 tasses par jour",
+      "warnings": [
+        "Aucune contre-indication majeure",
+        "Prudence chez les femmes enceintes"
+      ],
+      "found_in": ["Toute l'Afrique de l'Ouest"],
+      "scientific_validation": "Études sur les propriétés antimicrobiennes et anxiolytiques",
+      "image_url": "/images/plants/citronnelle.jpg"
+    },
+    {
+      "id": "7",
+      "scientific_name": "Hibiscus sabdariffa",
+      "common_names": ["Bissap", "Oseille de Guinée", "Karkadé"],
+      "local_names": {
+        "wolof": "Bissap",
+        "bambara": "Dabileni"
+      },
+      "family": "Malvaceae",
+      "description": "Plante dont les calices rouges servent à préparer une boisson populaire.",
+      "traditional_uses": [
+        "Hypertension",
+        "Fièvre",
+        "Infections urinaires",
+        "Constipation"
+      ],
+      "medicinal_properties": [
+        "Antihypertenseur",
+        "Diurétique",
+        "Antioxydant",
+        "Laxatif léger"
+      ],
+      "preparation": "Infusion de calices séchés (50g pour 1L d'eau bouillante)",
+      "dosage": "2-3 verres par jour",
+      "warnings": [
+        "Peut interagir avec les médicaments contre l'hypertension",
+        "Consommation modérée pendant la grossesse"
+      ],
+      "found_in": ["Sénégal", "Mali", "Burkina Faso", "Guinée", "Côte d'Ivoire"],
+      "scientific_validation": "Études cliniques sur l'effet antihypertenseur",
+      "image_url": "/images/plants/bissap.jpg"
+    },
+    {
+      "id": "8",
+      "scientific_name": "Allium sativum",
+      "common_names": ["Ail", "Garlic"],
+      "local_names": {
+        "bambara": "Ayo",
+        "wolof": "Lay"
+      },
+      "family": "Amaryllidaceae",
+      "description": "Bulbe aromatique aux nombreuses propriétés médicinales.",
+      "traditional_uses": [
+        "Hypertension",
+        "Infections respiratoires",
+        "Vermifuge",
+        "Renforcement immunitaire"
+      ],
+      "medicinal_properties": [
+        "Antibactérien",
+        "Antifongique",
+        "Antihypertenseur",
+        "Immunostimulant"
+      ],
+      "preparation": "Consommation crue (2-3 gousses par jour) ou en décoction",
+      "dosage": "2-3 gousses par jour, de préférence à jeun",
+      "warnings": [
+        "Peut causer des brûlures d'estomac",
+        "Odeur forte",
+        "Prudence avec les anticoagulants"
+      ],
+      "found_in": ["Cultivé dans toute l'Afrique"],
+      "scientific_validation": "Nombreuses études sur les effets cardiovasculaires",
+      "image_url": "/images/plants/ail.jpg"
+    },
+    {
+      "id": "9",
+      "scientific_name": "Zingiber officinale",
+      "common_names": ["Gingembre"],
+      "local_names": {
+        "bambara": "Zanzafil",
+        "wolof": "Gingembre"
+      },
+      "family": "Zingiberaceae",
+      "description": "Rhizome épicé aux multiples vertus thérapeutiques.",
+      "traditional_uses": [
+        "Nausées et vomissements",
+        "Toux et rhume",
+        "Douleurs articulaires",
+        "Troubles digestifs"
+      ],
+      "medicinal_properties": [
+        "Anti-inflammatoire",
+        "Antiémétique",
+        "Antitussif",
+        "Réchauffant"
+      ],
+      "preparation": "Infusion de rhizome frais râpé (1 cuillère à soupe pour 1 tasse d'eau)",
+      "dosage": "2-3 tasses par jour",
+      "warnings": [
+        "Peut irriter l'estomac à forte dose",
+        "Prudence avec les anticoagulants",
+        "Modération pendant la grossesse"
+      ],
+      "found_in": ["Cultivé dans toute l'Afrique tropicale"],
+      "scientific_validation": "Études cliniques sur les nausées et l'inflammation",
+      "image_url": "/images/plants/gingembre.jpg"
+    },
+    {
+      "id": "10",
+      "scientific_name": "Aloe vera",
+      "common_names": ["Aloès", "Aloe"],
+      "local_names": {
+        "wolof": "Lalès",
+        "bambara": "Aloevera"
+      },
+      "family": "Asphodelaceae",
+      "description": "Plante succulente aux multiples usages cosmétiques et médicinaux.",
+      "traditional_uses": [
+        "Cicatrisation des brûlures",
+        "Problèmes de peau",
+        "Constipation",
+        "Diabète"
+      ],
+      "medicinal_properties": [
+        "Cicatrisant",
+        "Hydratant",
+        "Laxatif",
+        "Anti-inflammatoire"
+      ],
+      "preparation": "Gel frais appliqué localement ou jus (50ml par jour)",
+      "dosage": "Application topique: plusieurs fois par jour / Oral: 50ml le matin",
+      "warnings": [
+        "Ne pas utiliser le latex d'aloès pendant la grossesse",
+        "Peut causer des crampes abdominales",
+        "Interaction avec certains médicaments"
+      ],
+      "found_in": ["Cultivé dans toute l'Afrique"],
+      "scientific_validation": "Études sur la cicatrisation et le diabète",
+      "image_url": "/images/plants/aloe.jpg"
+    }
+  ]
+}
