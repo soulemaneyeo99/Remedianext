@@ -66,6 +66,7 @@ app.add_middleware(
         "http://localhost:3000",              # Dev local
         "http://localhost:3001",              # Dev alternatif
         "https://remedianext.vercel.app",     # Production Vercel
+        "https://remediav2.vercel.app",       # Production Vercel v2
         "https://*.vercel.app",               # Previews Vercel
         "https://remedia-henna.vercel.app",   # Ancien domaine (si encore utilisé)
         "https://remedianext-*.vercel.app",   # Pattern previews
