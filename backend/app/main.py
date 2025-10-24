@@ -12,19 +12,7 @@ from pathlib import Path
 
 from app.core.config import settings
 from app.api.v1 import scan, chat, plants
-from fastapi.middleware.cors import CORSMiddleware
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "https://remedianext.vercel.app",
-        "https://*.vercel.app"
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"]
-)
 # Configuration du logging
 logging.basicConfig(
     level=logging.INFO,
@@ -41,7 +29,19 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-
+# Configuration CORS
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "https://remedianext.vercel.app",
+        "https://*.vercel.app"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 # Middleware pour logger les requêtes
 @app.middleware("http")
