@@ -27,7 +27,6 @@ from typing import Callable, Optional
 from datetime import datetime
 
 from app.core.config import settings
-from app.api.v1 import scan, chat, plants
 
 # ============================================
 # CONFIGURATION LOGGING PROFESSIONNELLE
@@ -138,8 +137,6 @@ def configure_cors(application: FastAPI) -> None:
     
     # Ajouter pattern previews Vercel si pas en production stricte
     if settings.environment != "production":
-        # Note: FastAPI CORS ne supporte pas vraiment les wildcards complexes
-        # En dev, on peut être plus permissif
         allowed_origins.extend([
             "https://remedianext-git-main.vercel.app",
             "https://remediav2-git-main.vercel.app",
@@ -182,21 +179,13 @@ configure_cors(app)
 # ============================================
 
 class RequestIDMiddleware(BaseHTTPMiddleware):
-    """
-    Ajoute un ID unique à chaque requête pour traçabilité
-    """
+    """Ajoute un ID unique à chaque requête pour traçabilité"""
     
     async def dispatch(self, request: Request, call_next: Callable):
-        # Générer ID unique
         request_id = f"{int(time.time() * 1000)}-{id(request)}"
         request.state.request_id = request_id
-        
-        # Traiter requête
         response = await call_next(request)
-        
-        # Ajouter ID dans headers réponse
         response.headers["X-Request-ID"] = request_id
-        
         return response
 
 app.add_middleware(RequestIDMiddleware)
@@ -206,181 +195,97 @@ app.add_middleware(RequestIDMiddleware)
 # ============================================
 
 class StructuredLoggingMiddleware(BaseHTTPMiddleware):
-    """
-    Middleware de logging professionnel
-    
-    Caractéristiques:
-    - Skip OPTIONS (ne pas polluer logs avec preflight CORS)
-    - Timing précis des requêtes
-    - Logging structuré (JSON-compatible)
-    - Emojis pour lisibilité humaine
-    - Gestion erreurs gracieuse
-    """
+    """Middleware de logging professionnel avec skip OPTIONS"""
     
     def __init__(self, app: ASGIApp):
         super().__init__(app)
         self.logger = logging.getLogger("remedia.http")
     
     async def dispatch(self, request: Request, call_next: Callable):
-        # ✅ CRITIQUE: Ignorer OPTIONS complètement
-        # Permet au CORS middleware de gérer sans pollution des logs
+        # Skip OPTIONS (CORS preflight)
         if request.method == "OPTIONS":
             return await call_next(request)
         
-        # Extraire infos requête
         method = request.method
         path = request.url.path
         client_host = request.client.host if request.client else "unknown"
         request_id = getattr(request.state, "request_id", "no-id")
         
-        # Timer
         start_time = time.perf_counter()
         
-        # Log entrée
-        self.logger.info(
-            f"➡️  {method} {path} | "
-            f"from {client_host} | "
-            f"id={request_id}"
-        )
-        
         try:
-            # Traiter requête
             response = await call_next(request)
+            process_time = (time.perf_counter() - start_time) * 1000
             
-            # Calculer durée
-            duration_ms = (time.perf_counter() - start_time) * 1000
+            # Emoji basé sur status code
+            emoji = "✅" if 200 <= response.status_code < 300 else \
+                    "⚠️" if 400 <= response.status_code < 500 else "❌"
             
-            # Status emoji
-            if response.status_code < 300:
-                emoji = "✅"
-            elif response.status_code < 400:
-                emoji = "↪️"
-            elif response.status_code < 500:
-                emoji = "⚠️"
-            else:
-                emoji = "❌"
-            
-            # Log sortie
             self.logger.info(
-                f"{emoji} {method} {path} → "
-                f"{response.status_code} | "
-                f"{duration_ms:.2f}ms | "
-                f"id={request_id}"
+                f"{emoji} {method:6} {path:40} {response.status_code} "
+                f"[{process_time:6.2f}ms] {client_host} id={request_id}"
             )
             
-            # Ajouter timing dans headers
-            response.headers["X-Process-Time"] = f"{duration_ms:.2f}ms"
-            
+            response.headers["X-Process-Time"] = str(process_time)
             return response
             
         except Exception as e:
-            # Calculer durée même en cas d'erreur
-            duration_ms = (time.perf_counter() - start_time) * 1000
-            
-            # Log erreur
+            process_time = (time.perf_counter() - start_time) * 1000
             self.logger.error(
-                f"💥 {method} {path} → "
-                f"ERROR: {str(e)[:100]} | "
-                f"{duration_ms:.2f}ms | "
-                f"id={request_id}",
-                exc_info=True
+                f"💥 {method:6} {path:40} ERROR "
+                f"[{process_time:6.2f}ms] {client_host} id={request_id} - {str(e)}"
             )
-            
-            # Re-raise pour error handlers
             raise
 
 app.add_middleware(StructuredLoggingMiddleware)
 
 # ============================================
-# MIDDLEWARE: SÉCURITÉ HEADERS
+# ROUTES API v1
 # ============================================
 
-class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    """
-    Ajoute headers de sécurité standards
+# Import des routers
+try:
+    from app.api.v1 import scan, chat, plants
     
-    Best practices OWASP:
-    - X-Content-Type-Options: Prévient MIME sniffing
-    - X-Frame-Options: Prévient clickjacking
-    - X-XSS-Protection: Protection XSS legacy browsers
-    - Referrer-Policy: Contrôle fuite info
-    """
-    
-    async def dispatch(self, request: Request, call_next: Callable):
-        # Skip OPTIONS (déjà géré par CORS)
-        if request.method == "OPTIONS":
-            return await call_next(request)
-        
-        response = await call_next(request)
-        
-        # Headers sécurité
-        response.headers.update({
-            "X-Content-Type-Options": "nosniff",
-            "X-Frame-Options": "DENY",
-            "X-XSS-Protection": "1; mode=block",
-            "Referrer-Policy": "strict-origin-when-cross-origin",
-            "X-Powered-By": "REMEDIA",  # Custom branding
-        })
-        
-        return response
-
-app.add_middleware(SecurityHeadersMiddleware)
-
-# ============================================
-# INCLUSION ROUTES API
-# ============================================
-
-def register_routers(application: FastAPI) -> None:
-    """
-    Enregistre tous les routers API
-    Organisation modulaire et scalable
-    """
-    
-    # Router scan (reconnaissance plantes)
-    application.include_router(
+    # Inclure les routes avec préfixes
+    app.include_router(
         scan.router,
-        prefix="/api/v1",
+        prefix="/api/v1/scan",
         tags=["scan"]
     )
-    
-    # Router chat (assistant médical)
-    application.include_router(
+    app.include_router(
         chat.router,
-        prefix="/api/v1",
+        prefix="/api/v1/chat",
         tags=["chat"]
     )
-    
-    # Router plants (encyclopédie)
-    application.include_router(
+    app.include_router(
         plants.router,
-        prefix="/api/v1",
+        prefix="/api/v1/plants",
         tags=["plants"]
     )
+    logger.info("✅ API routes loaded")
     
-    logger.info("✅ API routers registered")
-
-register_routers(app)
+except ImportError as e:
+    logger.warning(f"⚠️ Could not import API routes: {e}")
+    logger.warning("⚠️ Routes will be registered manually")
 
 # ============================================
 # ROUTES SYSTÈME
 # ============================================
 
-@app.get("/", tags=["system"], status_code=status.HTTP_200_OK)
+@app.get("/", tags=["system"])
 async def root(request: Request):
     """
-    🏠 Endpoint racine - Informations API
-    
-    Retourne métadonnées et découverte endpoints
+    🏠 Page d'accueil API - Documentation et points d'accès
     """
     base_url = str(request.base_url).rstrip("/")
     
     return {
-        "name": settings.app_name,
+        "app": settings.app_name,
         "version": settings.app_version,
         "status": "operational",
+        "message": "🌿 REMEDIA API - Intelligence artificielle au service de la médecine traditionnelle africaine",
         "environment": settings.environment,
-        "timestamp": datetime.utcnow().isoformat(),
-        "description": "🌿 API de reconnaissance de plantes médicinales africaines avec IA",
         "documentation": {
             "swagger": f"{base_url}/docs" if settings.debug else None,
             "redoc": f"{base_url}/redoc" if settings.debug else None,
@@ -388,14 +293,14 @@ async def root(request: Request):
         },
         "endpoints": {
             "health": f"{base_url}/health",
-            "scan": f"{base_url}/api/v1/scan",
+            "scan": f"{base_url}/api/v1/scan/identify",
             "chat": f"{base_url}/api/v1/chat",
             "plants": f"{base_url}/api/v1/plants",
         },
         "features": [
             "🔍 Reconnaissance plantes par IA (Gemini Vision)",
             "💬 Assistant médical conversationnel",
-            "📚 Encyclopédie 150+ plantes médicinales",
+            "📚 Encyclopédie 200+ plantes médicinales",
             "✅ Validation scientifique",
             "🌍 Focus Afrique subsaharienne"
         ],
@@ -405,11 +310,6 @@ async def root(request: Request):
 async def health_check():
     """
     ❤️ Health Check - Monitoring
-    
-    Utilisé par:
-    - Railway/Render pour auto-healing
-    - Uptime monitors (UptimeRobot, etc.)
-    - Load balancers
     """
     gemini_configured = bool(settings.gemini_api_key)
     
@@ -436,11 +336,6 @@ async def health_check():
 async def test_gemini():
     """
     🧪 Test Gemini - Validation connexion API
-    
-    pour:
-    - Vérifier config en production
-    - Diagnostiquer problèmes API
-    - CI/CD health checks
     """
     try:
         if not settings.gemini_api_key:
@@ -492,13 +387,13 @@ async def not_found_handler(request: Request, exc):
             "success": False,
             "error": "Not Found",
             "message": f"Endpoint {request.url.path} introuvable",
-            "suggestion": "Consultez /docs pour la liste complète",
+            "suggestion": "Consultez /docs pour la liste complète" if settings.debug else "Vérifiez l'URL",
             "available_endpoints": [
                 "/",
                 "/health",
-                "/api/v1/scan",
+                "/api/v1/scan/identify",
                 "/api/v1/chat",
-                "/api/v1/plants"
+                "/api/v1/plants/list"
             ],
             "timestamp": datetime.utcnow().isoformat()
         }
@@ -524,10 +419,7 @@ async def internal_error_handler(request: Request, exc):
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    """
-    Handler global - Fallback pour toutes exceptions non gérées
-    Évite les crashes et assure logging complet
-    """
+    """Handler global - Fallback pour toutes exceptions non gérées"""
     request_id = getattr(request.state, "request_id", "unknown")
     logger.critical(
         f"💥 Unhandled exception (id={request_id}): {str(exc)}",
@@ -554,15 +446,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 @app.on_event("startup")
 async def startup_event():
-    """
-    Événement démarrage - Initialisation
-    
-    Best practices:
-    - Vérifier config critique
-    - Initialiser connexions externes
-    - Warmup caches
-    - Logger environnement
-    """
+    """Événement démarrage - Initialisation"""
     app.state.start_time = time.time()
     
     logger.info("=" * 60)
@@ -575,20 +459,17 @@ async def startup_event():
     logger.info(f"🌍 CORS: Configured for Vercel + localhost")
     logger.info(f"📊 Logging: Structured with request IDs")
     logger.info("=" * 60)
+    
+    # Vérifier que les routes sont chargées
+    routes_count = len([r for r in app.routes if hasattr(r, 'path')])
+    logger.info(f"📍 Routes loaded: {routes_count}")
+    
     logger.info("✅ REMEDIA API READY")
     logger.info("=" * 60)
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    """
-    Événement arrêt - Cleanup gracieux
-    
-    Best practices:
-    - Fermer connexions DB
-    - Flush logs
-    - Cleanup ressources
-    - Logger durée uptime
-    """
+    """Événement arrêt - Cleanup gracieux"""
     uptime = time.time() - app.state.start_time
     
     logger.info("=" * 60)
@@ -619,4 +500,3 @@ if __name__ == "__main__":
         use_colors=True,
         workers=1,  # Single worker pour éviter issues avec state
     )
-    
