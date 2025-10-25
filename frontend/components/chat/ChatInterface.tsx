@@ -1,16 +1,16 @@
 'use client'
 
 /**
- * 💎 ChatInterface Ultimate v5.0 - Production Ready
+ * 💎 ChatInterface Ultimate v6.0 - Streaming Markdown Progressif
  * 
  * Features:
- * - Markdown rendering (react-markdown)
- * - Bubble cachée sur /chat (pas de doublon)
+ * - Markdown rendu progressivement pendant streaming
+ * - Animation fluide word-by-word avec parsing markdown
+ * - Bubble conditionnelle (cachée sur /chat)
  * - Mobile-first responsive
- * - Auto-scroll intelligent
- * - Zero débordement
+ * - UX premium
  * 
- * @version 5.0.0
+ * @version 6.0.0
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react'
@@ -57,6 +57,7 @@ interface ExtendedMessage extends ChatMessage {
   timestamp: Date
   feedback?: 'positive' | 'negative' | null
   isStreaming?: boolean
+  streamingContent?: string
 }
 
 // ============================================
@@ -64,23 +65,20 @@ interface ExtendedMessage extends ChatMessage {
 // ============================================
 
 const MarkdownComponents = {
-  // Paragraphs
   p: ({ children }: any) => (
     <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>
   ),
   
-  // Headers
   h1: ({ children }: any) => (
-    <h1 className="text-xl font-bold mb-3 mt-4 first:mt-0">{children}</h1>
+    <h1 className="text-xl font-bold mb-3 mt-4 first:mt-0 text-green-800">{children}</h1>
   ),
   h2: ({ children }: any) => (
-    <h2 className="text-lg font-bold mb-2 mt-3 first:mt-0">{children}</h2>
+    <h2 className="text-lg font-bold mb-2 mt-3 first:mt-0 text-green-700">{children}</h2>
   ),
   h3: ({ children }: any) => (
-    <h3 className="text-base font-semibold mb-2 mt-3 first:mt-0">{children}</h3>
+    <h3 className="text-base font-semibold mb-2 mt-3 first:mt-0 text-green-600">{children}</h3>
   ),
   
-  // Lists
   ul: ({ children }: any) => (
     <ul className="list-disc list-inside mb-2 space-y-1 ml-2">{children}</ul>
   ),
@@ -88,53 +86,66 @@ const MarkdownComponents = {
     <ol className="list-decimal list-inside mb-2 space-y-1 ml-2">{children}</ol>
   ),
   li: ({ children }: any) => (
-    <li className="leading-relaxed">{children}</li>
+    <li className="leading-relaxed ml-2">{children}</li>
   ),
   
-  // Code
   code: ({ inline, children }: any) => 
     inline ? (
-      <code className="bg-black bg-opacity-10 px-1.5 py-0.5 rounded text-sm font-mono">
+      <code className="bg-gray-900 bg-opacity-10 px-1.5 py-0.5 rounded text-sm font-mono text-green-700">
         {children}
       </code>
     ) : (
-      <code className="block bg-black bg-opacity-10 p-3 rounded-lg text-sm font-mono overflow-x-auto my-2">
+      <code className="block bg-gray-900 bg-opacity-5 p-3 rounded-lg text-sm font-mono overflow-x-auto my-2 border border-gray-200">
         {children}
       </code>
     ),
   
-  // Blockquote
   blockquote: ({ children }: any) => (
-    <blockquote className="border-l-4 border-green-500 pl-4 py-2 my-2 italic bg-green-50 bg-opacity-50 rounded-r">
+    <blockquote className="border-l-4 border-green-500 pl-4 py-2 my-2 italic bg-green-50 rounded-r">
       {children}
     </blockquote>
   ),
   
-  // Strong/Bold
   strong: ({ children }: any) => (
-    <strong className="font-bold">{children}</strong>
+    <strong className="font-bold text-gray-900">{children}</strong>
   ),
   
-  // Em/Italic
   em: ({ children }: any) => (
-    <em className="italic">{children}</em>
+    <em className="italic text-gray-700">{children}</em>
   ),
   
-  // Links
   a: ({ href, children }: any) => (
     <a 
       href={href} 
       target="_blank" 
       rel="noopener noreferrer"
-      className="text-green-600 hover:text-green-700 underline"
+      className="text-green-600 hover:text-green-700 underline decoration-green-300 hover:decoration-green-500 transition-colors"
     >
       {children}
     </a>
   ),
   
-  // Horizontal rule
   hr: () => (
     <hr className="my-4 border-gray-300" />
+  ),
+  
+  // Tables (GFM)
+  table: ({ children }: any) => (
+    <div className="overflow-x-auto my-3">
+      <table className="min-w-full border border-gray-300 rounded-lg">
+        {children}
+      </table>
+    </div>
+  ),
+  th: ({ children }: any) => (
+    <th className="border border-gray-300 bg-green-50 px-3 py-2 text-left font-semibold text-sm">
+      {children}
+    </th>
+  ),
+  td: ({ children }: any) => (
+    <td className="border border-gray-300 px-3 py-2 text-sm">
+      {children}
+    </td>
   ),
 }
 
@@ -154,7 +165,6 @@ export default function ChatInterface({
   const [messages, setMessages] = useState<ExtendedMessage[]>([])
   const [inputMessage, setInputMessage] = useState(initialMessage || '')
   const [isLoading, setIsLoading] = useState(false)
-  const [streamingMessage, setStreamingMessage] = useState('')
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [isListening, setIsListening] = useState(false)
   const [isMinimized, setIsMinimized] = useState(mode === 'bubble')
@@ -169,11 +179,10 @@ export default function ChatInterface({
   const isAutoScrolling = useRef(true)
 
   // ========== BUBBLE VISIBILITY ==========
-  // Cacher bubble si on est déjà sur /chat
   const shouldHideBubble = mode === 'bubble' && pathname === '/chat'
   
   if (shouldHideBubble) {
-    return null // Ne rien render
+    return null
   }
 
   // ========== AUTO-SCROLL ==========
@@ -196,7 +205,7 @@ export default function ChatInterface({
 
   useEffect(() => {
     scrollToBottom('smooth')
-  }, [messages, streamingMessage, scrollToBottom])
+  }, [messages, scrollToBottom])
 
   useEffect(() => {
     const saved = localStorage.getItem('remedia-chat-messages')
@@ -273,7 +282,6 @@ export default function ChatInterface({
     setMessages(prev => [...prev, userMessage])
     setInputMessage('')
     setIsLoading(true)
-    setStreamingMessage('')
     isAutoScrolling.current = true
 
     setTimeout(() => scrollToBottom('auto'), 50)
@@ -289,12 +297,12 @@ export default function ChatInterface({
 
       if (response.success && response.response) {
         const fullText = response.response
-        const words = fullText.split(' ')
-        let currentText = ''
-
+        
+        // Créer message assistant avec streaming activé
         const assistantMessage: ExtendedMessage = {
           role: 'assistant',
-          content: '',
+          content: fullText, // Contenu final stocké
+          streamingContent: '', // Contenu streaming
           id: assistantId,
           timestamp: new Date(),
           isStreaming: true
@@ -302,28 +310,38 @@ export default function ChatInterface({
 
         setMessages(prev => [...prev, assistantMessage])
 
+        // Stream progressif word-by-word
+        const words = fullText.split(' ')
+        let currentText = ''
+
         for (let i = 0; i < words.length; i++) {
           currentText += (i > 0 ? ' ' : '') + words[i]
-          setStreamingMessage(currentText)
           
-          if (i % 5 === 0) {
-            scrollToBottom('smooth')
+          // Mettre à jour le streamingContent
+          setMessages(prev => prev.map(m => 
+            m.id === assistantId 
+              ? { ...m, streamingContent: currentText }
+              : m
+          ))
+          
+          // Scroll tous les 3 mots
+          if (i % 3 === 0) {
+            setTimeout(() => scrollToBottom('smooth'), 10)
           }
           
-          await new Promise(resolve => setTimeout(resolve, 30))
+          // Délai entre mots (plus rapide = plus fluide)
+          await new Promise(resolve => setTimeout(resolve, 25))
         }
 
+        // Finaliser: désactiver streaming
         setMessages(prev => prev.map(m => 
           m.id === assistantId 
-            ? { ...m, content: fullText, isStreaming: false }
+            ? { ...m, isStreaming: false, streamingContent: undefined }
             : m
         ))
-        setStreamingMessage('')
 
       } else {
-        // The API response type doesn't guarantee an 'error' property,
-        // cast to any to safely attempt to read it while providing a fallback.
-        throw new Error((response as any).error || 'Réponse invalide')
+        throw new Error(response.error || 'Réponse invalide')
       }
 
     } catch (error: any) {
@@ -403,7 +421,6 @@ export default function ChatInterface({
   const handleClearChat = () => {
     if (confirm('Effacer toute la conversation ?')) {
       setMessages([])
-      setStreamingMessage('')
       localStorage.removeItem('remedia-chat-messages')
     }
   }
@@ -474,7 +491,7 @@ export default function ChatInterface({
       {/* ========== HEADER ========== */}
       <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg">
             <Bot className="h-6 w-6 text-white" />
           </div>
           <div className="min-w-0">
@@ -542,14 +559,15 @@ export default function ChatInterface({
         {/* Empty state */}
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center mb-4">
-              <Leaf className="h-8 w-8 text-green-600" />
+            <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center mb-4 shadow-lg">
+              <Leaf className="h-10 w-10 text-green-600" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
               Bonjour ! 👋
             </h3>
-            <p className="text-sm text-gray-600 max-w-xs">
-              Je suis votre assistant médical REMÉDIA. Comment puis-je vous aider ?
+            <p className="text-sm text-gray-600 max-w-xs leading-relaxed">
+              Je suis votre assistant médical REMÉDIA, spécialisé en plantes médicinales africaines. 
+              Comment puis-je vous aider ?
             </p>
           </div>
         )}
@@ -565,7 +583,7 @@ export default function ChatInterface({
           >
             {/* Avatar */}
             <div className={cn(
-              'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0',
+              'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 shadow-md',
               message.role === 'user'
                 ? 'bg-blue-500'
                 : 'bg-gradient-to-br from-green-500 to-emerald-600'
@@ -583,27 +601,24 @@ export default function ChatInterface({
               message.role === 'user' ? 'flex flex-col items-end' : 'flex flex-col items-start'
             )}>
               <div className={cn(
-                'rounded-2xl px-3 sm:px-4 py-2 sm:py-3 max-w-[85%] break-words',
+                'rounded-2xl px-3 sm:px-4 py-2 sm:py-3 max-w-[85%] break-words shadow-sm',
                 message.role === 'user'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-900'
+                  ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white'
+                  : 'bg-gradient-to-br from-gray-50 to-gray-100 text-gray-900 border border-gray-200'
               )}>
                 {message.role === 'assistant' ? (
-                  message.isStreaming ? (
-                    <div className="text-sm leading-relaxed prose prose-sm max-w-none prose-green">
-                      {streamingMessage}
-                      <span className="inline-block w-0.5 h-4 bg-current ml-1 animate-pulse" />
-                    </div>
-                  ) : (
-                    <div className="text-sm leading-relaxed prose prose-sm max-w-none prose-green">
-                      <ReactMarkdown 
-                        remarkPlugins={[remarkGfm]}
-                        components={MarkdownComponents}
-                      >
-                        {message.content}
-                      </ReactMarkdown>
-                    </div>
-                  )
+                  <div className="text-sm leading-relaxed prose prose-sm max-w-none prose-green">
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkGfm]}
+                      components={MarkdownComponents}
+                    >
+                      {message.isStreaming ? message.streamingContent || '' : message.content}
+                    </ReactMarkdown>
+                    
+                    {message.isStreaming && (
+                      <span className="inline-block w-0.5 h-4 bg-green-600 ml-1 animate-pulse" />
+                    )}
+                  </div>
                 ) : (
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">
                     {message.content}
@@ -676,7 +691,7 @@ export default function ChatInterface({
             isAutoScrolling.current = true
             scrollToBottom('smooth')
           }}
-          className="absolute bottom-20 right-4 w-10 h-10 bg-white border border-gray-300 rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition-all z-10"
+          className="absolute bottom-20 right-4 w-10 h-10 bg-white border border-gray-300 rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition-all z-10 hover:scale-110"
           title="Retour en bas"
         >
           <ChevronDown className="h-5 w-5 text-gray-600" />
@@ -685,7 +700,7 @@ export default function ChatInterface({
 
       {/* ========== SUGGESTIONS ========== */}
       {messages.length === 0 && suggestions.length > 0 && (
-        <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200 bg-gray-50">
+        <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200 bg-gradient-to-br from-gray-50 to-white">
           <div className="flex items-center gap-2 mb-2">
             <Sparkles className="h-4 w-4 text-green-600 flex-shrink-0" />
             <span className="text-xs font-medium text-gray-700">Questions suggérées</span>
@@ -696,7 +711,7 @@ export default function ChatInterface({
               <button
                 key={idx}
                 onClick={() => handleSuggestion(suggestion)}
-                className="text-left text-xs p-2.5 bg-white border border-gray-200 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all group"
+                className="text-left text-xs p-2.5 bg-white border border-gray-200 rounded-xl hover:border-green-500 hover:bg-green-50 hover:shadow-md transition-all group"
               >
                 <p className="line-clamp-2 text-gray-700 group-hover:text-green-700">
                   {suggestion}
@@ -707,7 +722,7 @@ export default function ChatInterface({
 
           <button
             onClick={loadSuggestions}
-            className="mt-2 w-full text-xs text-gray-600 hover:text-green-600 flex items-center justify-center gap-2 py-2"
+            className="mt-2 w-full text-xs text-gray-600 hover:text-green-600 flex items-center justify-center gap-2 py-2 transition-colors"
           >
             <RotateCcw className="h-3.5 w-3.5" />
             Autres questions
@@ -716,7 +731,7 @@ export default function ChatInterface({
       )}
 
       {/* ========== INPUT ========== */}
-      <div className="flex-shrink-0 border-t border-gray-200 p-3 sm:p-4 bg-white">
+      <div className="flex-shrink-0 border-t border-gray-200 p-3 sm:p-4 bg-gradient-to-br from-white to-gray-50">
         <div className="flex gap-2">
           <textarea
             ref={inputRef}
@@ -726,7 +741,7 @@ export default function ChatInterface({
             placeholder="Message..."
             disabled={isLoading}
             rows={1}
-            className="flex-1 resize-none rounded-xl border border-gray-300 px-3 sm:px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+            className="flex-1 resize-none rounded-xl border border-gray-300 px-3 sm:px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] shadow-sm"
             style={{ maxHeight: '120px' }}
           />
 
@@ -735,9 +750,9 @@ export default function ChatInterface({
               onClick={toggleVoiceInput}
               disabled={isLoading}
               className={cn(
-                'min-w-[44px] h-[44px] rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center',
+                'min-w-[44px] h-[44px] rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-sm',
                 isListening
-                  ? 'bg-red-500 text-white animate-pulse'
+                  ? 'bg-red-500 text-white animate-pulse shadow-lg'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               )}
               title={isListening ? 'Arrêter' : 'Dicter'}
@@ -752,7 +767,7 @@ export default function ChatInterface({
             <button
               onClick={() => handleSendMessage()}
               disabled={isLoading || !inputMessage.trim()}
-              className="min-w-[44px] h-[44px] bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-green-500 disabled:hover:to-emerald-600 flex items-center justify-center"
+              className="min-w-[44px] h-[44px] bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-green-500 disabled:hover:to-emerald-600 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105"
               title="Envoyer"
             >
               {isLoading ? (
