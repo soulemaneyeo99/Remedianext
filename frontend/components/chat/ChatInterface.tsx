@@ -1,25 +1,22 @@
 'use client'
 
 /**
- * 💎 ChatInterface Ultimate - Best Practices 2025
+ * 💎 ChatInterface Ultimate v5.0 - Production Ready
  * 
- * Architecture moderne:
- * - Layout 100vh sans débordement
- * - Pas de footer (input intégré proprement)
- * - Mobile-first avec safe-area-inset
+ * Features:
+ * - Markdown rendering (react-markdown)
+ * - Bubble cachée sur /chat (pas de doublon)
+ * - Mobile-first responsive
  * - Auto-scroll intelligent
- * - Touch-optimized (44px minimum)
- * - Zero layout shifts
+ * - Zero débordement
  * 
- * Références:
- * - WhatsApp, Telegram, iMessage patterns
- * - Material Design 3 / iOS HIG
- * - WCAG 2.1 AA compliant
- * 
- * @version 4.0.0
+ * @version 5.0.0
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { usePathname } from 'next/navigation'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import {
   Send,
   Loader2,
@@ -63,6 +60,85 @@ interface ExtendedMessage extends ChatMessage {
 }
 
 // ============================================
+// MARKDOWN COMPONENTS
+// ============================================
+
+const MarkdownComponents = {
+  // Paragraphs
+  p: ({ children }: any) => (
+    <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>
+  ),
+  
+  // Headers
+  h1: ({ children }: any) => (
+    <h1 className="text-xl font-bold mb-3 mt-4 first:mt-0">{children}</h1>
+  ),
+  h2: ({ children }: any) => (
+    <h2 className="text-lg font-bold mb-2 mt-3 first:mt-0">{children}</h2>
+  ),
+  h3: ({ children }: any) => (
+    <h3 className="text-base font-semibold mb-2 mt-3 first:mt-0">{children}</h3>
+  ),
+  
+  // Lists
+  ul: ({ children }: any) => (
+    <ul className="list-disc list-inside mb-2 space-y-1 ml-2">{children}</ul>
+  ),
+  ol: ({ children }: any) => (
+    <ol className="list-decimal list-inside mb-2 space-y-1 ml-2">{children}</ol>
+  ),
+  li: ({ children }: any) => (
+    <li className="leading-relaxed">{children}</li>
+  ),
+  
+  // Code
+  code: ({ inline, children }: any) => 
+    inline ? (
+      <code className="bg-black bg-opacity-10 px-1.5 py-0.5 rounded text-sm font-mono">
+        {children}
+      </code>
+    ) : (
+      <code className="block bg-black bg-opacity-10 p-3 rounded-lg text-sm font-mono overflow-x-auto my-2">
+        {children}
+      </code>
+    ),
+  
+  // Blockquote
+  blockquote: ({ children }: any) => (
+    <blockquote className="border-l-4 border-green-500 pl-4 py-2 my-2 italic bg-green-50 bg-opacity-50 rounded-r">
+      {children}
+    </blockquote>
+  ),
+  
+  // Strong/Bold
+  strong: ({ children }: any) => (
+    <strong className="font-bold">{children}</strong>
+  ),
+  
+  // Em/Italic
+  em: ({ children }: any) => (
+    <em className="italic">{children}</em>
+  ),
+  
+  // Links
+  a: ({ href, children }: any) => (
+    <a 
+      href={href} 
+      target="_blank" 
+      rel="noopener noreferrer"
+      className="text-green-600 hover:text-green-700 underline"
+    >
+      {children}
+    </a>
+  ),
+  
+  // Horizontal rule
+  hr: () => (
+    <hr className="my-4 border-gray-300" />
+  ),
+}
+
+// ============================================
 // COMPONENT
 // ============================================
 
@@ -72,6 +148,8 @@ export default function ChatInterface({
   onClose,
   className
 }: ChatInterfaceProps) {
+  const pathname = usePathname()
+  
   // ========== STATE ==========
   const [messages, setMessages] = useState<ExtendedMessage[]>([])
   const [inputMessage, setInputMessage] = useState(initialMessage || '')
@@ -90,7 +168,15 @@ export default function ChatInterface({
   const recognitionRef = useRef<any>(null)
   const isAutoScrolling = useRef(true)
 
-  // ========== AUTO-SCROLL INTELLIGENT ==========
+  // ========== BUBBLE VISIBILITY ==========
+  // Cacher bubble si on est déjà sur /chat
+  const shouldHideBubble = mode === 'bubble' && pathname === '/chat'
+  
+  if (shouldHideBubble) {
+    return null // Ne rien render
+  }
+
+  // ========== AUTO-SCROLL ==========
   
   const scrollToBottom = useCallback((behavior: 'smooth' | 'auto' = 'smooth') => {
     messagesEndRef.current?.scrollIntoView({ behavior, block: 'end' })
@@ -102,10 +188,7 @@ export default function ChatInterface({
     const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight
     
-    // Bouton scroll si > 300px du bas
     setShowScrollButton(distanceFromBottom > 300)
-    
-    // Auto-scroll si proche du bas (<100px)
     isAutoScrolling.current = distanceFromBottom < 100
   }, [])
 
@@ -238,7 +321,7 @@ export default function ChatInterface({
         setStreamingMessage('')
 
       } else {
-        throw new Error('Réponse invalide')
+        throw new Error(response.error || 'Réponse invalide')
       }
 
     } catch (error: any) {
@@ -341,7 +424,6 @@ export default function ChatInterface({
     }
   }
 
-  // Auto-resize textarea
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const target = e.target
     target.style.height = 'auto'
@@ -365,25 +447,20 @@ export default function ChatInterface({
     )
   }
 
-  // Container classes - CRITIQUE pour éviter débordement
   const containerClasses = cn(
     'flex flex-col bg-white',
     mode === 'fullscreen' ? [
-      // Fullscreen: 100vh avec safe area
       'h-screen w-full',
-      'h-[100dvh]', // Dynamic viewport height (mobile)
+      'h-[100dvh]',
     ] : [
-      // Bubble: taille contrôlée
       'fixed z-50',
       'bottom-4 right-4 sm:bottom-6 sm:right-6',
-      // Largeur responsive sans débordement
-      'w-[calc(100vw-2rem)]', // Mobile: viewport - marges
-      'sm:w-[calc(100vw-3rem)]', // Tablet
-      'max-w-md', // Desktop: max 28rem (448px)
-      // Hauteur contrôlée
-      'h-[calc(100vh-2rem)]', // Mobile
+      'w-[calc(100vw-2rem)]',
+      'sm:w-[calc(100vw-3rem)]',
+      'max-w-md',
+      'h-[calc(100vh-2rem)]',
       'sm:h-[600px]',
-      'max-h-[calc(100vh-2rem)]', // Jamais dépasser
+      'max-h-[calc(100vh-2rem)]',
       'rounded-2xl shadow-2xl',
       'border border-gray-200'
     ],
@@ -509,12 +586,26 @@ export default function ChatInterface({
                   ? 'bg-blue-500 text-white'
                   : 'bg-gray-100 text-gray-900'
               )}>
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                  {message.isStreaming ? streamingMessage : message.content}
-                </p>
-                
-                {message.isStreaming && (
-                  <span className="inline-block w-0.5 h-4 bg-current ml-1 animate-pulse" />
+                {message.role === 'assistant' ? (
+                  message.isStreaming ? (
+                    <div className="text-sm leading-relaxed prose prose-sm max-w-none prose-green">
+                      {streamingMessage}
+                      <span className="inline-block w-0.5 h-4 bg-current ml-1 animate-pulse" />
+                    </div>
+                  ) : (
+                    <div className="text-sm leading-relaxed prose prose-sm max-w-none prose-green">
+                      <ReactMarkdown 
+                        remarkPlugins={[remarkGfm]}
+                        components={MarkdownComponents}
+                      >
+                        {message.content}
+                      </ReactMarkdown>
+                    </div>
+                  )
+                ) : (
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                    {message.content}
+                  </p>
                 )}
               </div>
 
@@ -573,11 +664,10 @@ export default function ChatInterface({
           </div>
         ))}
 
-        {/* Scroll anchor */}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Scroll to bottom button */}
+      {/* Scroll button */}
       {showScrollButton && (
         <button
           onClick={() => {
