@@ -1,0 +1,10 @@
+<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="300" fill="#e5f5e8"/>
+  <g transform="translate(200, 150)">
+    <circle r="50" fill="#10b981" opacity="0.2"/>
+    <path d="M 0,-30 Q -15,-15 -15,0 Q -15,15 0,30 Q 15,15 15,0 Q 15,-15 0,-30" fill="#10b981"/>
+  </g>
+  <text x="200" y="250" font-family="Arial" font-size="16" fill="#6b7280" text-anchor="middle">
+    Image à venir
+  </text>
+</svg>

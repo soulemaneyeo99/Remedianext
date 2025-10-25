@@ -1,282 +1,253 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import Image from 'next/image'
-import {
-  Search,
-  Filter,
-  Leaf,
-  ChevronRight,
-  Loader2,
-  AlertCircle
-} from 'lucide-react'
-import { plantsAPI, type Plant } from '@/lib/api'
+/**
+ * 🌿 Plants Page - Encyclopédie Plantes Médicinales
+ * 
+ * Features:
+ * - Grid responsive avec images réelles
+ * - Filtres par catégorie/propriété
+ * - Search bar
+ * - Loading states
+ * - SEO optimized
+ * 
+ * @version 2.0.0
+ */
+
+import { useState, useEffect, useMemo } from 'react'
+import { Search, Filter, Leaf, Loader2 } from 'lucide-react'
+import PlantCard from '@/components/plants/PlantCard'
+import { getPlantImagePath } from '@/lib/plant-images'
+
+interface Plant {
+  id: string
+  name: string
+  scientificName: string
+  description: string
+  properties: string[]
+  uses: string[]
+}
 
 export default function PlantsPage() {
   const [plants, setPlants] = useState<Plant[]>([])
-  const [filteredPlants, setFilteredPlants] = useState<Plant[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedFamily, setSelectedFamily] = useState<string>('all')
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [selectedFilter, setSelectedFilter] = useState<string>('all')
 
+  // Charger plantes depuis API
   useEffect(() => {
     loadPlants()
   }, [])
 
-  useEffect(() => {
-    filterPlants()
-  }, [searchQuery, selectedFamily, plants])
-
   const loadPlants = async () => {
     try {
-      setIsLoading(true)
-      const response = await plantsAPI.getAll(100, 0)
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/plants/list`)
+      const data = await response.json()
       
-      if (response.success) {
-        setPlants(response.data)
-        setFilteredPlants(response.data)
+      if (data.success && data.plants) {
+        setPlants(data.plants)
       }
-    } catch (err: any) {
-      console.error('Error loading plants:', err)
-      setError('Impossible de charger les plantes')
+    } catch (error) {
+      console.error('Failed to load plants:', error)
+      // Fallback: plantes par défaut
+      setPlants(DEFAULT_PLANTS)
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
-  const filterPlants = () => {
+  // Filtrage et recherche
+  const filteredPlants = useMemo(() => {
     let filtered = plants
 
-    // Search filter
-    if (searchQuery.trim()) {
+    // Filtre par catégorie
+    if (selectedFilter !== 'all') {
+      filtered = filtered.filter(plant => 
+        plant.properties?.some(prop => 
+          prop.toLowerCase().includes(selectedFilter.toLowerCase())
+        )
+      )
+    }
+
+    // Recherche
+    if (searchQuery) {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(plant =>
-        plant.scientific_name.toLowerCase().includes(query) ||
-        plant.common_names.some(name => name.toLowerCase().includes(query)) ||
+        plant.name.toLowerCase().includes(query) ||
+        plant.scientificName.toLowerCase().includes(query) ||
         plant.description.toLowerCase().includes(query)
       )
     }
 
-    // Family filter
-    if (selectedFamily !== 'all') {
-      filtered = filtered.filter(plant => plant.family === selectedFamily)
-    }
-
-    setFilteredPlants(filtered)
-  }
-
-  const families = ['all', ...Array.from(new Set(plants.map(p => p.family)))]
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 text-green-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Chargement de l'encyclopédie...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <p className="text-gray-800 font-semibold mb-2">Erreur de chargement</p>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={loadPlants}
-            className="btn-primary"
-          >
-            Réessayer
-          </button>
-        </div>
-      </div>
-    )
-  }
+    return filtered
+  }, [plants, searchQuery, selectedFilter])
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white py-12">
-      <div className="container mx-auto px-6 max-w-7xl">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-            <Leaf className="h-8 w-8 text-green-600" />
+    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white py-12 sm:py-16">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="max-w-3xl">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
+              🌿 Encyclopédie des Plantes Médicinales
+            </h1>
+            <p className="text-lg sm:text-xl text-green-100 leading-relaxed">
+              Découvrez notre collection de plantes médicinales africaines avec images, 
+              propriétés et utilisations traditionnelles validées scientifiquement.
+            </p>
           </div>
-          
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Encyclopédie des Plantes
-          </h1>
-          
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Découvrez {plants.length}+ plantes médicinales africaines avec leurs propriétés et usages traditionnels
-          </p>
         </div>
+      </div>
 
-        {/* Search and Filters */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-gray-100">
-          <div className="flex flex-col md:flex-row gap-4">
-            {/* Search */}
+      {/* Filters & Search */}
+      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
+        <div className="container mx-auto px-4 sm:px-6 py-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Search Bar */}
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
+                placeholder="Rechercher une plante..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Rechercher une plante..."
-                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
 
-            {/* Family Filter */}
-            <div className="relative md:w-64">
-              <Filter className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            {/* Filter Dropdown */}
+            <div className="relative sm:w-64">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
               <select
-                value={selectedFamily}
-                onChange={(e) => setSelectedFamily(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none cursor-pointer"
+                value={selectedFilter}
+                onChange={(e) => setSelectedFilter(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none bg-white cursor-pointer"
               >
-                {families.map((family) => (
-                  <option key={family} value={family}>
-                    {family === 'all' ? 'Toutes les familles' : family}
-                  </option>
-                ))}
+                <option value="all">Toutes les propriétés</option>
+                <option value="antibactérien">Antibactérien</option>
+                <option value="antiviral">Antiviral</option>
+                <option value="anti-inflammatoire">Anti-inflammatoire</option>
+                <option value="antioxydant">Antioxydant</option>
+                <option value="digestif">Digestif</option>
+                <option value="immunité">Immunité</option>
               </select>
             </div>
           </div>
 
           {/* Results count */}
-          <div className="mt-4 text-sm text-gray-600">
-            {filteredPlants.length} plante{filteredPlants.length > 1 ? 's' : ''} trouvée{filteredPlants.length > 1 ? 's' : ''}
+          <div className="mt-3 text-sm text-gray-600">
+            {loading ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Chargement...
+              </span>
+            ) : (
+              <span>
+                {filteredPlants.length} plante{filteredPlants.length > 1 ? 's' : ''} trouvée{filteredPlants.length > 1 ? 's' : ''}
+              </span>
+            )}
           </div>
         </div>
+      </div>
 
-        {/* Plants Grid */}
-        {filteredPlants.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Plants Grid */}
+      <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        {loading ? (
+          /* Loading skeleton */
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl overflow-hidden border border-gray-200 animate-pulse">
+                <div className="aspect-[4/3] bg-gray-200" />
+                <div className="p-5 space-y-3">
+                  <div className="h-6 bg-gray-200 rounded w-3/4" />
+                  <div className="h-4 bg-gray-200 rounded w-1/2" />
+                  <div className="h-4 bg-gray-200 rounded w-full" />
+                  <div className="h-4 bg-gray-200 rounded w-5/6" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filteredPlants.length > 0 ? (
+          /* Plants Grid */
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredPlants.map((plant) => (
-              <PlantCard key={plant.id} plant={plant} />
+              <PlantCard
+                key={plant.id}
+                id={plant.id}
+                name={plant.name}
+                scientificName={plant.scientificName}
+                description={plant.description}
+                image={getPlantImagePath(plant.scientificName, plant.name)}
+              />
             ))}
           </div>
         ) : (
-          <div className="text-center py-12">
-            <Leaf className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          /* Empty state */
+          <div className="text-center py-16">
+            <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+              <Leaf className="h-10 w-10 text-gray-400" />
+            </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
               Aucune plante trouvée
             </h3>
-            <p className="text-gray-600 mb-4">
-              Essayez de modifier vos critères de recherche
+            <p className="text-gray-600 mb-6">
+              Essayez de modifier vos filtres ou votre recherche
             </p>
             <button
               onClick={() => {
                 setSearchQuery('')
-                setSelectedFamily('all')
+                setSelectedFilter('all')
               }}
-              className="btn-secondary"
+              className="px-6 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors"
             >
               Réinitialiser les filtres
             </button>
           </div>
         )}
-
-        {/* Stats Banner */}
-        <div className="mt-16 bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl p-8 text-white">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            <div>
-              <div className="text-4xl font-bold mb-2">{plants.length}+</div>
-              <div className="text-green-100">Plantes répertoriées</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold mb-2">{families.length - 1}</div>
-              <div className="text-green-100">Familles botaniques</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold mb-2">7</div>
-              <div className="text-green-100">Pays couverts</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold mb-2">98%</div>
-              <div className="text-green-100">Validées scientifiquement</div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   )
 }
 
-function PlantCard({ plant }: { plant: Plant }) {
-  return (
-    <Link href={`/plants/${plant.id}`}>
-      <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 group">
-        {/* Image */}
-        <div className="relative h-48 bg-gradient-to-br from-green-100 to-emerald-100 overflow-hidden">
-          {plant.image_url ? (
-            <Image
-              src={plant.image_url}
-              alt={plant.scientific_name}
-              fill
-              className="object-cover group-hover:scale-110 transition-transform duration-300"
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Leaf className="h-20 w-20 text-green-300" />
-            </div>
-          )}
-          
-          {/* Family badge */}
-          <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium text-gray-700">
-            {plant.family}
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-green-600 transition-colors">
-            {plant.scientific_name}
-          </h3>
-
-          {plant.common_names && plant.common_names.length > 0 && (
-            <p className="text-sm text-gray-600 mb-3">
-              {plant.common_names.slice(0, 2).join(', ')}
-            </p>
-          )}
-
-          <p className="text-sm text-gray-700 mb-4 line-clamp-3">
-            {plant.description}
-          </p>
-
-          {/* Properties tags */}
-          {plant.medicinal_properties && plant.medicinal_properties.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              {plant.medicinal_properties.slice(0, 3).map((prop, idx) => (
-                <span
-                  key={idx}
-                  className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium"
-                >
-                  {prop}
-                </span>
-              ))}
-              {plant.medicinal_properties.length > 3 && (
-                <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
-                  +{plant.medicinal_properties.length - 3}
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* CTA */}
-          <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-            <span className="text-green-600 font-semibold group-hover:text-green-700">
-              En savoir plus
-            </span>
-            <ChevronRight className="h-5 w-5 text-green-600 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </div>
-      </div>
-    </Link>
-  )
-}
+// Plantes par défaut (fallback)
+const DEFAULT_PLANTS: Plant[] = [
+  {
+    id: 'aloe-vera',
+    name: 'Aloe Vera',
+    scientificName: 'Aloe vera',
+    description: 'Plante succulente aux propriétés cicatrisantes et hydratantes exceptionnelles.',
+    properties: ['cicatrisant', 'hydratant', 'anti-inflammatoire'],
+    uses: ['Brûlures', 'Peau sèche', 'Constipation']
+  },
+  {
+    id: 'artemisia',
+    name: 'Armoise',
+    scientificName: 'Artemisia annua',
+    description: 'Plante médicinale efficace contre le paludisme, contient de l\'artémisinine.',
+    properties: ['antipaludique', 'antibactérien', 'antiviral'],
+    uses: ['Paludisme', 'Fièvres', 'Infections']
+  },
+  {
+    id: 'neem',
+    name: 'Neem',
+    scientificName: 'Azadirachta indica',
+    description: 'Arbre aux multiples vertus médicinales, antibactérien puissant.',
+    properties: ['antibactérien', 'antifongique', 'antiparasitaire'],
+    uses: ['Peau', 'Dents', 'Parasites']
+  },
+  {
+    id: 'moringa',
+    name: 'Moringa',
+    scientificName: 'Moringa oleifera',
+    description: 'Super-aliment riche en nutriments, vitamines et minéraux.',
+    properties: ['nutritif', 'antioxydant', 'anti-inflammatoire'],
+    uses: ['Malnutrition', 'Fatigue', 'Immunité']
+  },
+  {
+    id: 'gingembre',
+    name: 'Gingembre',
+    scientificName: 'Zingiber officinale',
+    description: 'Rhizome aux propriétés digestives et anti-inflammatoires reconnues.',
+    properties: ['digestif', 'anti-inflammatoire', 'antioxydant'],
+    uses: ['Nausées', 'Digestion', 'Douleurs']
+  }
+]
