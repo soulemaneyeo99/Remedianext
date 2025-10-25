@@ -3,14 +3,9 @@
 /**
  * 🌿 Plants Page - Encyclopédie Plantes Médicinales
  * 
- * Features:
- * - Grid responsive avec images réelles
- * - Filtres par catégorie/propriété
- * - Search bar
- * - Loading states
- * - SEO optimized
+ * Fix: Charge plantes par défaut immédiatement si API échoue
  * 
- * @version 2.1.0 - TypeScript fixes
+ * @version 2.2.0 - Fallback fix
  */
 
 import { useState, useEffect, useMemo } from 'react'
@@ -23,35 +18,120 @@ interface Plant {
   name: string
   scientificName: string
   description: string
-  properties: string[]
-  uses: string[]
+  properties?: string[]
+  uses?: string[]
 }
 
+// Plantes par défaut - TOUJOURS disponibles
+const DEFAULT_PLANTS: Plant[] = [
+  {
+    id: 'aloe-vera',
+    name: 'Aloe Vera',
+    scientificName: 'Aloe vera',
+    description: 'Plante succulente aux propriétés cicatrisantes et hydratantes exceptionnelles. Utilisée depuis l\'Antiquité pour soigner brûlures et problèmes de peau.',
+    properties: ['cicatrisant', 'hydratant', 'anti-inflammatoire'],
+    uses: ['Brûlures', 'Peau sèche', 'Constipation']
+  },
+  {
+    id: 'artemisia',
+    name: 'Armoise Annuelle',
+    scientificName: 'Artemisia annua',
+    description: 'Plante médicinale très efficace contre le paludisme grâce à l\'artémisinine qu\'elle contient. Reconnue par l\'OMS pour ses propriétés antipaludiques.',
+    properties: ['antipaludique', 'antibactérien', 'antiviral'],
+    uses: ['Paludisme', 'Fièvres', 'Infections']
+  },
+  {
+    id: 'neem',
+    name: 'Neem',
+    scientificName: 'Azadirachta indica',
+    description: 'Arbre sacré aux multiples vertus médicinales. Antibactérien puissant utilisé en médecine ayurvédique depuis des millénaires.',
+    properties: ['antibactérien', 'antifongique', 'antiparasitaire'],
+    uses: ['Problèmes de peau', 'Hygiène dentaire', 'Parasites']
+  },
+  {
+    id: 'moringa',
+    name: 'Moringa',
+    scientificName: 'Moringa oleifera',
+    description: 'Surnommé "l\'arbre de vie", le Moringa est un super-aliment exceptionnellement riche en vitamines, minéraux et protéines.',
+    properties: ['nutritif', 'antioxydant', 'anti-inflammatoire'],
+    uses: ['Malnutrition', 'Fatigue', 'Renforcement immunité']
+  },
+  {
+    id: 'gingembre',
+    name: 'Gingembre',
+    scientificName: 'Zingiber officinale',
+    description: 'Rhizome aromatique aux propriétés digestives et anti-inflammatoires reconnues mondialement. Utilisé en cuisine et médecine.',
+    properties: ['digestif', 'anti-inflammatoire', 'antioxydant'],
+    uses: ['Nausées', 'Digestion difficile', 'Douleurs articulaires']
+  },
+  {
+    id: 'kinkeliba',
+    name: 'Kinkeliba',
+    scientificName: 'Combretum micranthum',
+    description: 'Tisane africaine traditionnelle aux vertus détoxifiantes. Très populaire en Afrique de l\'Ouest pour ses bienfaits sur le foie.',
+    properties: ['détoxifiant', 'digestif', 'diurétique'],
+    uses: ['Détox foie', 'Digestion', 'Rétention d\'eau']
+  },
+  {
+    id: 'hibiscus',
+    name: 'Bissap (Hibiscus)',
+    scientificName: 'Hibiscus sabdariffa',
+    description: 'Fleur aux pétales rouges utilisée pour préparer le bissap, boisson populaire riche en antioxydants et vitamine C.',
+    properties: ['antioxydant', 'hypotenseur', 'rafraîchissant'],
+    uses: ['Hypertension', 'Fatigue', 'Hydratation']
+  },
+  {
+    id: 'baobab',
+    name: 'Baobab',
+    scientificName: 'Adansonia digitata',
+    description: 'Arbre emblématique d\'Afrique. Son fruit (pain de singe) est exceptionnellement riche en vitamine C et fibres.',
+    properties: ['énergisant', 'immunostimulant', 'digestif'],
+    uses: ['Fatigue', 'Immunité', 'Transit intestinal']
+  }
+]
+
 export default function PlantsPage() {
-  const [plants, setPlants] = useState<Plant[]>([])
-  const [loading, setLoading] = useState(true)
+  // Initialiser avec plantes par défaut (pas vide!)
+  const [plants, setPlants] = useState<Plant[]>(DEFAULT_PLANTS)
+  const [loading, setLoading] = useState(false) // false car on a déjà les plantes
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedFilter, setSelectedFilter] = useState<string>('all')
 
-  // Charger plantes depuis API
+  // Essayer de charger depuis API (optionnel)
   useEffect(() => {
-    loadPlants()
+    loadPlantsFromAPI()
   }, [])
 
-  const loadPlants = async () => {
+  const loadPlantsFromAPI = async () => {
+    // Ne pas mettre loading à true pour éviter skeleton
+    // On a déjà les plantes par défaut affichées
+    
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/plants/list`)
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const response = await fetch(`${apiUrl}/api/v1/plants/list`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) {
+        throw new Error('API response not ok')
+      }
+      
       const data = await response.json()
       
-      if (data.success && data.plants) {
+      if (data.success && data.plants && Array.isArray(data.plants) && data.plants.length > 0) {
+        // Si API retourne des plantes, les utiliser
+        console.log('✅ Loaded plants from API:', data.plants.length)
         setPlants(data.plants)
+      } else {
+        // Sinon garder les plantes par défaut
+        console.log('ℹ️ Using default plants')
       }
     } catch (error) {
-      console.error('Failed to load plants:', error)
-      // Fallback: plantes par défaut
-      setPlants(DEFAULT_PLANTS)
-    } finally {
-      setLoading(false)
+      console.warn('⚠️ API not available, using default plants:', error)
+      // Garder les plantes par défaut (déjà set dans useState)
     }
   }
 
@@ -129,6 +209,7 @@ export default function PlantsPage() {
                 <option value="antioxydant">Antioxydant</option>
                 <option value="digestif">Digestif</option>
                 <option value="immunité">Immunité</option>
+                <option value="détoxifiant">Détoxifiant</option>
               </select>
             </div>
           </div>
@@ -181,7 +262,7 @@ export default function PlantsPage() {
             ))}
           </div>
         ) : (
-          /* Empty state */
+          /* Empty state - seulement si recherche/filtre ne trouve rien */
           <div className="text-center py-16">
             <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
               <Leaf className="h-10 w-10 text-gray-400" />
@@ -207,47 +288,3 @@ export default function PlantsPage() {
     </div>
   )
 }
-
-// Plantes par défaut (fallback)
-const DEFAULT_PLANTS: Plant[] = [
-  {
-    id: 'aloe-vera',
-    name: 'Aloe Vera',
-    scientificName: 'Aloe vera',
-    description: 'Plante succulente aux propriétés cicatrisantes et hydratantes exceptionnelles.',
-    properties: ['cicatrisant', 'hydratant', 'anti-inflammatoire'],
-    uses: ['Brûlures', 'Peau sèche', 'Constipation']
-  },
-  {
-    id: 'artemisia',
-    name: 'Armoise',
-    scientificName: 'Artemisia annua',
-    description: 'Plante médicinale efficace contre le paludisme, contient de l\'artémisinine.',
-    properties: ['antipaludique', 'antibactérien', 'antiviral'],
-    uses: ['Paludisme', 'Fièvres', 'Infections']
-  },
-  {
-    id: 'neem',
-    name: 'Neem',
-    scientificName: 'Azadirachta indica',
-    description: 'Arbre aux multiples vertus médicinales, antibactérien puissant.',
-    properties: ['antibactérien', 'antifongique', 'antiparasitaire'],
-    uses: ['Peau', 'Dents', 'Parasites']
-  },
-  {
-    id: 'moringa',
-    name: 'Moringa',
-    scientificName: 'Moringa oleifera',
-    description: 'Super-aliment riche en nutriments, vitamines et minéraux.',
-    properties: ['nutritif', 'antioxydant', 'anti-inflammatoire'],
-    uses: ['Malnutrition', 'Fatigue', 'Immunité']
-  },
-  {
-    id: 'gingembre',
-    name: 'Gingembre',
-    scientificName: 'Zingiber officinale',
-    description: 'Rhizome aux propriétés digestives et anti-inflammatoires reconnues.',
-    properties: ['digestif', 'anti-inflammatoire', 'antioxydant'],
-    uses: ['Nausées', 'Digestion', 'Douleurs']
-  }
-]
