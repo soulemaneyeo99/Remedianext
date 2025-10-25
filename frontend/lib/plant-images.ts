@@ -1,19 +1,30 @@
 // lib/plant-images.ts
 
 /**
- * 🌿 Configuration Images Plantes
+ * 🌿 Configuration Images Plantes - COMPLÈTE
  * 
- * Mapping nom scientifique → filename image
- * Logique de fallback intelligente
+ * Mapping nom scientifique/commun → filename image
+ * Toutes les 8+ plantes avec images
  * 
- * @version 2.1.0 - TypeScript compatible
+ * @version 3.0.0 - Toutes images ajoutées
  */
 
 /**
  * Mapping nom scientifique/commun → filename image
+ * 
+ * Images disponibles:
+ * - aloe.jpg
+ * - annua.jpg
+ * - Azadirachtaindica.jpg
+ * - Baobab.jpg ← NOUVEAU
+ * - Bissap.jpg ← NOUVEAU
+ * - Kinkeliba.jpg ← NOUVEAU
+ * - moringa.jpg
+ * - neem.jpg
+ * - Zingiberofficinale.jpg
  */
 export const PLANT_IMAGES: Record<string, string> = {
-  // Aloe
+  // Aloe Vera
   'Aloe vera': 'aloe.jpg',
   'Aloe barbadensis': 'aloe.jpg',
   'Aloe': 'aloe.jpg',
@@ -22,17 +33,35 @@ export const PLANT_IMAGES: Record<string, string> = {
   'Artemisia annua': 'annua.jpg',
   'Artemisia': 'annua.jpg',
   'Armoise': 'annua.jpg',
+  'Armoise Annuelle': 'annua.jpg',
   
-  // Neem
+  // Neem / Azadirachta
   'Azadirachta indica': 'Azadirachtaindica.jpg',
   'Azadirachta': 'Azadirachtaindica.jpg',
   'Neem': 'neem.jpg',
+  
+  // Baobab ← NOUVEAU
+  'Adansonia digitata': 'Baobab.jpg',
+  'Adansonia': 'Baobab.jpg',
+  'Baobab': 'Baobab.jpg',
+  
+  // Bissap / Hibiscus ← NOUVEAU
+  'Hibiscus sabdariffa': 'Bissap.jpg',
+  'Hibiscus': 'Bissap.jpg',
+  'Bissap': 'Bissap.jpg',
+  'Bissap (Hibiscus)': 'Bissap.jpg',
+  
+  // Kinkeliba ← NOUVEAU
+  'Combretum micranthum': 'Kinkeliba.jpg',
+  'Combretum': 'Kinkeliba.jpg',
+  'Kinkeliba': 'Kinkeliba.jpg',
+  'Kinkéliba': 'Kinkeliba.jpg',
   
   // Moringa
   'Moringa oleifera': 'moringa.jpg',
   'Moringa': 'moringa.jpg',
   
-  // Gingembre
+  // Gingembre / Zingiber
   'Zingiber officinale': 'Zingiberofficinale.jpg',
   'Zingiber': 'Zingiberofficinale.jpg',
   'Gingembre': 'Zingiberofficinale.jpg',
@@ -58,7 +87,7 @@ export function getPlantImagePath(
   
   // Essayer match partiel sur premier mot
   // Ex: "Artemisia annua L." → "Artemisia"
-  if (!filename) {
+  if (!filename && scientificName) {
     const firstWord = scientificName.split(' ')[0]
     filename = PLANT_IMAGES[firstWord]
   }
@@ -81,10 +110,12 @@ export function getPlantImageUrl(
   
   // Si pas d'image, retourner placeholder
   if (!path) {
-    return `${process.env.NEXT_PUBLIC_SITE_URL || ''}/images/plants/placeholder.svg`
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
+    return `${siteUrl}/images/plants/placeholder.svg`
   }
   
-  return `${process.env.NEXT_PUBLIC_SITE_URL || ''}${path}`
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
+  return `${siteUrl}${path}`
 }
 
 /**
@@ -98,4 +129,27 @@ export function hasPlantImage(
   commonName?: string
 ): boolean {
   return getPlantImagePath(scientificName, commonName) !== undefined
+}
+
+/**
+ * Obtenir toutes les plantes avec images disponibles
+ * @returns Array de noms scientifiques
+ */
+export function getAvailablePlants(): string[] {
+  return Object.keys(PLANT_IMAGES).filter(key => {
+    // Retourner seulement les noms scientifiques (avec espace)
+    return key.includes(' ')
+  })
+}
+
+/**
+ * Statistiques images
+ */
+export function getImageStats() {
+  const uniqueImages = new Set(Object.values(PLANT_IMAGES))
+  return {
+    totalMappings: Object.keys(PLANT_IMAGES).length,
+    uniqueImages: uniqueImages.size,
+    images: Array.from(uniqueImages)
+  }
 }
