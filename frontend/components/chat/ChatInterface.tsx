@@ -1,17 +1,22 @@
 'use client'
 
 /**
- * 💎 ChatInterface Professional - UX Mobile-First
+ * 💎 ChatInterface Ultimate - Best Practices 2025
  * 
- * Best practices 2025:
- * - Mobile-first responsive design
- * - Smooth streaming avec auto-scroll intelligent
- * - Layout adaptatif (mobile/tablet/desktop)
- * - Touch-friendly interactions
- * - Accessible (WCAG 2.1 AA)
- * - Performance optimisée
+ * Architecture moderne:
+ * - Layout 100vh sans débordement
+ * - Pas de footer (input intégré proprement)
+ * - Mobile-first avec safe-area-inset
+ * - Auto-scroll intelligent
+ * - Touch-optimized (44px minimum)
+ * - Zero layout shifts
  * 
- * @version 3.0.0
+ * Références:
+ * - WhatsApp, Telegram, iMessage patterns
+ * - Material Design 3 / iOS HIG
+ * - WCAG 2.1 AA compliant
+ * 
+ * @version 4.0.0
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react'
@@ -20,12 +25,10 @@ import {
   Loader2,
   Bot,
   User,
-  AlertCircle,
   Leaf,
   MessageCircle,
   X,
   Minimize2,
-  Maximize2,
   Download,
   Copy,
   ThumbsUp,
@@ -35,10 +38,8 @@ import {
   Trash2,
   RotateCcw,
   Sparkles,
-  Heart,
-  TrendingUp,
-  ArrowRight,
-  Check
+  Check,
+  ChevronDown
 } from 'lucide-react'
 import { chatAPI, type ChatMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
@@ -80,6 +81,7 @@ export default function ChatInterface({
   const [isListening, setIsListening] = useState(false)
   const [isMinimized, setIsMinimized] = useState(mode === 'bubble')
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [showScrollButton, setShowScrollButton] = useState(false)
   
   // ========== REFS ==========
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -91,29 +93,28 @@ export default function ChatInterface({
   // ========== AUTO-SCROLL INTELLIGENT ==========
   
   const scrollToBottom = useCallback((behavior: 'smooth' | 'auto' = 'smooth') => {
-    if (messagesEndRef.current && isAutoScrolling.current) {
-      messagesEndRef.current.scrollIntoView({ behavior, block: 'end' })
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior, block: 'end' })
   }, [])
 
-  // Détecter si l'user scroll manuellement
   const handleScroll = useCallback(() => {
     if (!messagesContainerRef.current) return
     
     const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current
-    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight
     
-    isAutoScrolling.current = isNearBottom
+    // Bouton scroll si > 300px du bas
+    setShowScrollButton(distanceFromBottom > 300)
+    
+    // Auto-scroll si proche du bas (<100px)
+    isAutoScrolling.current = distanceFromBottom < 100
   }, [])
 
   // ========== EFFECTS ==========
 
-  // Auto-scroll pendant streaming
   useEffect(() => {
     scrollToBottom('smooth')
   }, [messages, streamingMessage, scrollToBottom])
 
-  // Charger messages du localStorage
   useEffect(() => {
     const saved = localStorage.getItem('remedia-chat-messages')
     if (saved) {
@@ -129,26 +130,22 @@ export default function ChatInterface({
     }
   }, [])
 
-  // Sauvegarder messages dans localStorage
   useEffect(() => {
     if (messages.length > 0) {
       localStorage.setItem('remedia-chat-messages', JSON.stringify(messages))
     }
   }, [messages])
 
-  // Charger suggestions au démarrage
   useEffect(() => {
     loadSuggestions()
   }, [])
 
-  // Message initial
   useEffect(() => {
     if (initialMessage && messages.length === 0) {
       handleSendMessage(initialMessage)
     }
   }, [initialMessage])
 
-  // Focus input quand minimized change
   useEffect(() => {
     if (!isMinimized && mode === 'bubble') {
       inputRef.current?.focus()
@@ -168,7 +165,6 @@ export default function ChatInterface({
       console.warn('Suggestions unavailable, using fallback', err)
     }
 
-    // Fallback: Import dynamique
     try {
       const { getRandomQuestions } = await import('@/lib/strategic-questions')
       const randomQuestions = getRandomQuestions(6)
@@ -184,7 +180,6 @@ export default function ChatInterface({
     const trimmed = messageText.trim()
     if (!trimmed || isLoading) return
 
-    // User message
     const userMessage: ExtendedMessage = {
       role: 'user',
       content: trimmed,
@@ -198,14 +193,10 @@ export default function ChatInterface({
     setStreamingMessage('')
     isAutoScrolling.current = true
 
-    // Scroll immédiatement après user message
     setTimeout(() => scrollToBottom('auto'), 50)
 
     try {
-      // Assistant message (placeholder pour streaming)
       const assistantId = `assistant-${Date.now()}`
-      
-      // Appeler API
       const history = messages.map(m => ({
         role: m.role,
         content: m.content
@@ -214,12 +205,10 @@ export default function ChatInterface({
       const response = await chatAPI.sendMessage(trimmed, history)
 
       if (response.success && response.response) {
-        // Simuler streaming pour UX fluide
         const fullText = response.response
         const words = fullText.split(' ')
         let currentText = ''
 
-        // Assistant message
         const assistantMessage: ExtendedMessage = {
           role: 'assistant',
           content: '',
@@ -230,12 +219,10 @@ export default function ChatInterface({
 
         setMessages(prev => [...prev, assistantMessage])
 
-        // Stream words
         for (let i = 0; i < words.length; i++) {
           currentText += (i > 0 ? ' ' : '') + words[i]
           setStreamingMessage(currentText)
           
-          // Scroll pendant streaming
           if (i % 5 === 0) {
             scrollToBottom('smooth')
           }
@@ -243,7 +230,6 @@ export default function ChatInterface({
           await new Promise(resolve => setTimeout(resolve, 30))
         }
 
-        // Finaliser
         setMessages(prev => prev.map(m => 
           m.id === assistantId 
             ? { ...m, content: fullText, isStreaming: false }
@@ -260,7 +246,7 @@ export default function ChatInterface({
       
       const errorMessage: ExtendedMessage = {
         role: 'assistant',
-        content: '😔 Désolé, une erreur est survenue. Veuillez réessayer dans quelques instants.',
+        content: '😔 Désolé, une erreur est survenue. Veuillez réessayer.',
         id: `error-${Date.now()}`,
         timestamp: new Date()
       }
@@ -272,14 +258,12 @@ export default function ChatInterface({
     }
   }
 
-  // ========== SUGGESTION CLICK ==========
+  // ========== ACTIONS ==========
 
   const handleSuggestion = (suggestion: string) => {
     setInputMessage(suggestion)
     handleSendMessage(suggestion)
   }
-
-  // ========== VOICE INPUT ==========
 
   const toggleVoiceInput = () => {
     if (isListening) {
@@ -303,10 +287,7 @@ export default function ChatInterface({
           inputRef.current?.focus()
         }
 
-        recognition.onerror = (event: any) => {
-          console.error('Speech recognition error:', event.error)
-          setIsListening(false)
-        }
+        recognition.onerror = () => setIsListening(false)
 
         recognitionRef.current = recognition
         recognition.start()
@@ -315,8 +296,6 @@ export default function ChatInterface({
       }
     }
   }
-
-  // ========== ACTIONS ==========
 
   const handleCopy = async (content: string, id: string) => {
     try {
@@ -355,13 +334,19 @@ export default function ChatInterface({
     URL.revokeObjectURL(url)
   }
 
-  // ========== KEYBOARD ==========
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSendMessage()
     }
+  }
+
+  // Auto-resize textarea
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const target = e.target
+    target.style.height = 'auto'
+    target.style.height = Math.min(target.scrollHeight, 120) + 'px'
+    setInputMessage(target.value)
   }
 
   // ========== RENDER ==========
@@ -371,7 +356,7 @@ export default function ChatInterface({
     return (
       <button
         onClick={() => setIsMinimized(false)}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center group hover:scale-110"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center hover:scale-110"
         aria-label="Ouvrir le chat"
       >
         <MessageCircle className="h-6 w-6 text-white" />
@@ -380,15 +365,25 @@ export default function ChatInterface({
     )
   }
 
-  // Container classes
+  // Container classes - CRITIQUE pour éviter débordement
   const containerClasses = cn(
     'flex flex-col bg-white',
     mode === 'fullscreen' ? [
-      'h-screen w-full'
+      // Fullscreen: 100vh avec safe area
+      'h-screen w-full',
+      'h-[100dvh]', // Dynamic viewport height (mobile)
     ] : [
-      'fixed bottom-6 right-6 z-50',
-      'w-[calc(100vw-3rem)] max-w-md',
-      'h-[600px] max-h-[calc(100vh-6rem)]',
+      // Bubble: taille contrôlée
+      'fixed z-50',
+      'bottom-4 right-4 sm:bottom-6 sm:right-6',
+      // Largeur responsive sans débordement
+      'w-[calc(100vw-2rem)]', // Mobile: viewport - marges
+      'sm:w-[calc(100vw-3rem)]', // Tablet
+      'max-w-md', // Desktop: max 28rem (448px)
+      // Hauteur contrôlée
+      'h-[calc(100vh-2rem)]', // Mobile
+      'sm:h-[600px]',
+      'max-h-[calc(100vh-2rem)]', // Jamais dépasser
       'rounded-2xl shadow-2xl',
       'border border-gray-200'
     ],
@@ -398,23 +393,23 @@ export default function ChatInterface({
   return (
     <div className={containerClasses}>
       {/* ========== HEADER ========== */}
-      <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50 flex-shrink-0">
-        <div className="flex items-center gap-3">
+      <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50">
+        <div className="flex items-center gap-3 min-w-0">
           <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center flex-shrink-0">
             <Bot className="h-6 w-6 text-white" />
           </div>
-          <div>
-            <h2 className="font-semibold text-gray-900 text-sm sm:text-base">
+          <div className="min-w-0">
+            <h2 className="font-semibold text-gray-900 text-sm sm:text-base truncate">
               Assistant REMÉDIA
             </h2>
             <p className="text-xs text-gray-600 flex items-center gap-1">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              En ligne
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse flex-shrink-0" />
+              <span className="truncate">En ligne</span>
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 flex-shrink-0">
           {messages.length > 0 && (
             <>
               <button
@@ -459,21 +454,23 @@ export default function ChatInterface({
       <div
         ref={messagesContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4 scroll-smooth"
-        style={{ overscrollBehavior: 'contain' }}
+        className="flex-1 overflow-y-auto px-4 py-4 space-y-4"
+        style={{ 
+          overscrollBehavior: 'contain',
+          WebkitOverflowScrolling: 'touch'
+        }}
       >
-        {/* Welcome message */}
+        {/* Empty state */}
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center mb-4">
               <Leaf className="h-8 w-8 text-green-600" />
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
               Bonjour ! 👋
             </h3>
-            <p className="text-sm sm:text-base text-gray-600 max-w-sm">
-              Je suis votre assistant médical REMÉDIA, spécialisé en plantes médicinales africaines. 
-              Comment puis-je vous aider aujourd'hui ?
+            <p className="text-sm text-gray-600 max-w-xs">
+              Je suis votre assistant médical REMÉDIA. Comment puis-je vous aider ?
             </p>
           </div>
         )}
@@ -483,7 +480,7 @@ export default function ChatInterface({
           <div
             key={message.id}
             className={cn(
-              'flex gap-3 animate-in slide-in-from-bottom-2 duration-300',
+              'flex gap-2 sm:gap-3 animate-in slide-in-from-bottom-2 duration-300',
               message.role === 'user' ? 'flex-row-reverse' : 'flex-row'
             )}
           >
@@ -507,32 +504,32 @@ export default function ChatInterface({
               message.role === 'user' ? 'flex flex-col items-end' : 'flex flex-col items-start'
             )}>
               <div className={cn(
-                'rounded-2xl px-4 py-3 max-w-[85%] sm:max-w-[75%] break-words',
+                'rounded-2xl px-3 sm:px-4 py-2 sm:py-3 max-w-[85%] break-words',
                 message.role === 'user'
                   ? 'bg-blue-500 text-white'
                   : 'bg-gray-100 text-gray-900'
               )}>
-                <p className="text-sm sm:text-base whitespace-pre-wrap leading-relaxed">
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">
                   {message.isStreaming ? streamingMessage : message.content}
                 </p>
                 
                 {message.isStreaming && (
-                  <span className="inline-block w-1 h-4 bg-current ml-1 animate-pulse" />
+                  <span className="inline-block w-0.5 h-4 bg-current ml-1 animate-pulse" />
                 )}
               </div>
 
-              {/* Actions (assistant only) */}
+              {/* Actions */}
               {message.role === 'assistant' && !message.isStreaming && (
-                <div className="flex items-center gap-2 mt-2 ml-2">
+                <div className="flex items-center gap-1 mt-1.5">
                   <button
                     onClick={() => handleCopy(message.content, message.id)}
-                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors group"
+                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
                     title="Copier"
                   >
                     {copiedId === message.id ? (
                       <Check className="h-3.5 w-3.5 text-green-600" />
                     ) : (
-                      <Copy className="h-3.5 w-3.5 text-gray-400 group-hover:text-gray-600" />
+                      <Copy className="h-3.5 w-3.5 text-gray-400" />
                     )}
                   </button>
 
@@ -580,61 +577,73 @@ export default function ChatInterface({
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Scroll to bottom button */}
+      {showScrollButton && (
+        <button
+          onClick={() => {
+            isAutoScrolling.current = true
+            scrollToBottom('smooth')
+          }}
+          className="absolute bottom-20 right-4 w-10 h-10 bg-white border border-gray-300 rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition-all z-10"
+          title="Retour en bas"
+        >
+          <ChevronDown className="h-5 w-5 text-gray-600" />
+        </button>
+      )}
+
       {/* ========== SUGGESTIONS ========== */}
       {messages.length === 0 && suggestions.length > 0 && (
-        <div className="px-4 sm:px-6 pb-4 border-t border-gray-200 flex-shrink-0 bg-gray-50">
-          <div className="pt-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="h-4 w-4 text-green-600" />
-              <span className="text-xs font-medium text-gray-700">Questions suggérées</span>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {suggestions.slice(0, 4).map((suggestion, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleSuggestion(suggestion)}
-                  className="text-left text-xs sm:text-sm p-3 bg-white border border-gray-200 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all group"
-                >
-                  <p className="line-clamp-2 text-gray-700 group-hover:text-green-700">
-                    {suggestion}
-                  </p>
-                </button>
-              ))}
-            </div>
-
-            <button
-              onClick={loadSuggestions}
-              className="mt-3 w-full text-xs text-gray-600 hover:text-green-600 flex items-center justify-center gap-2 py-2"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              Autres questions
-            </button>
+        <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200 bg-gray-50">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="h-4 w-4 text-green-600 flex-shrink-0" />
+            <span className="text-xs font-medium text-gray-700">Questions suggérées</span>
           </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {suggestions.slice(0, 4).map((suggestion, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleSuggestion(suggestion)}
+                className="text-left text-xs p-2.5 bg-white border border-gray-200 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all group"
+              >
+                <p className="line-clamp-2 text-gray-700 group-hover:text-green-700">
+                  {suggestion}
+                </p>
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={loadSuggestions}
+            className="mt-2 w-full text-xs text-gray-600 hover:text-green-600 flex items-center justify-center gap-2 py-2"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Autres questions
+          </button>
         </div>
       )}
 
       {/* ========== INPUT ========== */}
-      <div className="border-t border-gray-200 p-4 sm:p-6 bg-white flex-shrink-0">
-        <div className="flex gap-2 sm:gap-3">
+      <div className="flex-shrink-0 border-t border-gray-200 p-3 sm:p-4 bg-white">
+        <div className="flex gap-2">
           <textarea
             ref={inputRef}
             value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
+            onChange={handleInput}
             onKeyDown={handleKeyDown}
-            placeholder="Posez votre question sur les plantes médicinales..."
+            placeholder="Message..."
             disabled={isLoading}
             rows={1}
-            className="flex-1 resize-none rounded-xl border border-gray-300 px-4 py-3 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 resize-none rounded-xl border border-gray-300 px-3 sm:px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
             style={{ maxHeight: '120px' }}
           />
 
-          <div className="flex flex-col gap-2">
+          <div className="flex gap-2 flex-shrink-0">
             <button
               onClick={toggleVoiceInput}
               disabled={isLoading}
               className={cn(
-                'p-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed',
+                'min-w-[44px] h-[44px] rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center',
                 isListening
                   ? 'bg-red-500 text-white animate-pulse'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -651,7 +660,7 @@ export default function ChatInterface({
             <button
               onClick={() => handleSendMessage()}
               disabled={isLoading || !inputMessage.trim()}
-              className="p-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-green-500 disabled:hover:to-emerald-600"
+              className="min-w-[44px] h-[44px] bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-green-500 disabled:hover:to-emerald-600 flex items-center justify-center"
               title="Envoyer"
             >
               {isLoading ? (
@@ -662,11 +671,6 @@ export default function ChatInterface({
             </button>
           </div>
         </div>
-
-        {/* Info */}
-        <p className="text-xs text-gray-500 mt-3 text-center">
-          💡 Appuyez sur Entrée pour envoyer, Maj+Entrée pour nouvelle ligne
-        </p>
       </div>
     </div>
   )

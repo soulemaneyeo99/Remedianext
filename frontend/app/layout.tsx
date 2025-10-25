@@ -1,36 +1,55 @@
-import type { Metadata } from 'next'
+'use client'
+
+/**
+ * 🎨 Root Layout - Gestion Footer Conditionnelle
+ * 
+ * Footer caché sur:
+ * - /chat (fullscreen chat)
+ * - /scan (camera fullscreen)
+ * 
+ * Footer visible sur:
+ * - / (home)
+ * - /plants (encyclopédie)
+ * - etc.
+ */
+
 import { Inter } from 'next/font/google'
 import './globals.css'
 import Navbar from '@/components/layout/Navbar'
-import { Footer } from '@/components/layout/Footer'
-import FloatingChatBubble from '@/components/FloatingChatBubble'
+import Footer from '@/components/layout/Footer'
+import { usePathname } from 'next/navigation'
 
 const inter = Inter({ subsets: ['latin'] })
-
-export const metadata: Metadata = {
-  title: 'REMÉDIA - L\'intelligence verte au service de l\'Afrique',
-  description: 'Reconnaissez instantanément les plantes médicinales africaines grâce à l\'IA. Préservez les savoirs ancestraux, accédez aux soins naturels.',
-  keywords: 'plantes médicinales, Afrique, IA, santé naturelle, médecine traditionnelle',
-}
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const pathname = usePathname()
+
+  // Routes sans footer (fullscreen)
+  const hideFooter = pathname === '/chat' || pathname === '/scan'
+
   return (
     <html lang="fr">
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+        <meta name="theme-color" content="#10b981" />
+        <link rel="icon" href="/favicon.ico" />
+      </head>
       <body className={inter.className}>
-        <Navbar />
-        
-        <main className="min-h-screen">
+        {/* Navbar toujours présent (sauf si chat en mode bubble) */}
+        {pathname !== '/chat' && <Navbar />}
+
+        {/* Main content */}
+        <main className={hideFooter ? '' : 'min-h-screen'}>
           {children}
         </main>
 
-        <Footer />
-
-        {/* Chat Bubble Flottant - Disponible sur toutes les pages */}
-        <FloatingChatBubble />
+        {/* Footer conditionnel */}
+        {!hideFooter && <Footer />}
       </body>
     </html>
   )
