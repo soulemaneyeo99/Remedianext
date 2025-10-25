@@ -341,7 +341,7 @@ export default function ChatInterface({
         ))
 
       } else {
-        throw new Error(response.error || 'Réponse invalide')
+        throw new Error('Réponse                invalide')
       }
 
     } catch (error: any) {
