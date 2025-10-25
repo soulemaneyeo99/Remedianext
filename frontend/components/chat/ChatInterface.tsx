@@ -238,7 +238,7 @@ export default function ChatInterface({
         setStreamingMessage('')
 
       } else {
-        throw new Error(response.error || 'Réponse invalide')
+        throw new Error('Réponse invalide')
       }
 
     } catch (error: any) {
