@@ -321,7 +321,9 @@ export default function ChatInterface({
         setStreamingMessage('')
 
       } else {
-        throw new Error(response.error || 'Réponse invalide')
+        // The API response type doesn't guarantee an 'error' property,
+        // cast to any to safely attempt to read it while providing a fallback.
+        throw new Error((response as any).error || 'Réponse invalide')
       }
 
     } catch (error: any) {
