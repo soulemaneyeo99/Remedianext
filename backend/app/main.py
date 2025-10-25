@@ -437,7 +437,7 @@ async def test_gemini():
     """
     🧪 Test Gemini - Validation connexion API
     
-    Utile pour:
+    pour:
     - Vérifier config en production
     - Diagnostiquer problèmes API
     - CI/CD health checks
@@ -619,3 +619,4 @@ if __name__ == "__main__":
         use_colors=True,
         workers=1,  # Single worker pour éviter issues avec state
     )
+    
