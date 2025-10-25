@@ -159,7 +159,15 @@ Instructions:
 Réponds maintenant:"""
         
         # Appeler Gemini
-        response_text = await gemini_service.chat_medical(full_prompt)
+        gemini_result = await gemini_service.chat_medical(full_prompt)
+        
+        # Gérer réponse selon type (string ou dict)
+        if isinstance(gemini_result, dict):
+            # Si dict, extraire le texte
+            response_text = gemini_result.get("response") or gemini_result.get("text") or str(gemini_result)
+        else:
+            # Si string, utiliser directement
+            response_text = str(gemini_result)
         
         logger.info(f"✅ Chat response generated ({len(response_text)} chars)")
         
@@ -167,7 +175,7 @@ Réponds maintenant:"""
             success=True,
             response=response_text,
             metadata={
-                "model": "gemini-1.5-pro",
+                "model": "gemini-2.0-flash",
                 "history_length": len(request.conversation_history),
                 "response_length": len(response_text)
             }
